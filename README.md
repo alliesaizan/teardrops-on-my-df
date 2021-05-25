@@ -4,9 +4,9 @@
 
 # A Topic Modelling Analysis of Taylor Swift Song Lyrics 🎤
 
-![](assets/guitar.jpg {height=100px})
-
 # Below, you will find an abbreviated version of the blog post I wrote for this project!
+
+![](assets/guitar.jpg)
 
 I was browsing Kaggle for an interesting dataset when I ran across a [library of Taylor Swift’s songs](https://www.kaggle.com/PromptCloudHQ/taylor-swift-song-lyrics-from-all-the-albums).
 
