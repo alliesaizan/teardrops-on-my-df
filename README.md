@@ -4,7 +4,7 @@
 
 # A Topic Modelling Analysis of Taylor Swift Song Lyrics 🎤
 
-![](assets/guitar.jpg | height=100)
+![](assets/guitar.jpg {height=100px})
 
 # Below, you will find an abbreviated version of the blog post I wrote for this project!
 
