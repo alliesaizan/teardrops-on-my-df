@@ -4,7 +4,9 @@
 
 # A Topic Modelling Analysis of Taylor Swift Song Lyrics 🎤
 
-![](https://github.com/alliesaizan/teardrops-on-my-df/tree/main/assets/1989_World_Tour.jpg)
+![](https://github.com/alliesaizan/teardrops-on-my-df/main/assets/1989_World_Tour.jpg)
+
+# Below, you will find an abbreviated version of the blog post I wrote for this project!
 
 I was browsing Kaggle for an interesting dataset when I ran across a [library of Taylor Swift’s songs](https://www.kaggle.com/PromptCloudHQ/taylor-swift-song-lyrics-from-all-the-albums).
 
