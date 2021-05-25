@@ -1,0 +1,240 @@
+---
+title: "Teardrops on my Data Frame"
+subtitle: "An analysis of Taylor Swift's song lyrics"
+author: "Allie Saizan"
+date: "8/7/2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width=6, fig.height=4) 
+```
+
+
+```{r import, echo = FALSE, include = FALSE}
+# Source packages
+library(tidyverse)
+library(tidytext)
+library(tm)
+library(topicmodels)
+library(highcharter)
+
+# Load data and stopwords
+dat <- read.csv("taylor_swift_lyrics.csv")
+dat$lyric <- as.character(dat$lyric)
+data("stop_words")
+
+```
+
+## Introduction
+* I'm working to expand my data science portfolio
+
+* This analysis reviews Taylor Swift's song lyrics
+
+* Song lyrics data come from Kaggle.com
+
+## Background
+
+``` {r image, out.width = "150px", echo = FALSE, fig.align="center"}
+knitr::include_graphics("Taylor_Swift_Cavendish.jpg")
+```
+
+* Taylor Swift started out as a country singer, but made the transition to pop music around 2010
+
+* Her breakout song is "You Belong With Me"
+
+* Her most recent album was released in 2017
+
+## Goals
+This analysis seeks to answer the following questions:
+
+1. Did the length of Taylor's songs change over time?
+2. Did the complexity of her songs change over time?
+3. Do Taylor's songs tend to coalesce around a few topics? If so, how might we charcterize those topics? 
+4. Does a trend exist between song topic and song year released?
+
+```{r preprocessing, echo = FALSE, include= FALSE}
+
+# New data frame where all the songs have one row, instead of a row for each sentence
+datV2 <- dat %>% group_by(track_title) %>%
+  summarise(text = paste(lyric, collapse = " "))
+
+# Initial pre-processing steps: lowering words and removing stopwords
+datV2 <- datV2 %>% 
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>% 
+  group_by(track_title) %>%
+  nest(word) %>%
+  mutate(text = map(data, unlist), 
+         text = map_chr(text, paste, collapse = " ")) %>%
+  select(-data)
+
+datV2$text <- tolower(datV2$text)
+
+# Merge in the year of the songs
+years <- unique(dplyr::select(dat, year, track_title))
+datV2 <- merge(datV2, years, by="track_title")
+```
+
+## Summary statistics
+
+1. How many records are in the data? 
+
+```{r length, echo = FALSE}
+nrow(dat)
+```
+
+
+2. Is Taylor Swift the only artist represented in the data?
+
+```{r artist, echo = FALSE}
+unique(dat$artist)
+```
+
+3. How many songs are in the data?
+
+```{r songs, echo = FALSE}
+length(unique(dat$track_title))
+```
+
+## Pre-processing
+
+* In text analysis, it's common to pre-process data in the following ways:
+    + Remove stopwords (such as "and," "the," "you")
+    + Retrieve word stems (to remove different tenses of words)
+    + Remove special characters (accents, images, etc)
+* The data came as one row for each song lyric, so I collapse the data into one row per song
+
+## 1. Average word count per song has increased steadily over the years
+```{r songlength, echo = FALSE, warning=FALSE, message=FALSE}
+  # Determine wordcounts
+data.songlength.1 <- datV2 %>% 
+                      unnest_tokens(word, text) %>%
+#                      anti_join(stop_words) %>% 
+                      group_by(track_title, year) %>%
+                      count(word, sort = TRUE) %>%
+                      summarise(total_count = sum(n))
+plotting <- data.songlength.1 %>%
+              group_by(year) %>%
+              summarise(average_wc = mean(total_count))
+  # Plot results
+highchart(width = "600px", height = "400px") %>% 
+  hc_title(text = "Average Song Word Count by Year") %>%
+  hc_xAxis(categories = plotting$year) %>%
+  hc_add_series(name = "Word Count", data = plotting$average_wc, color="#815BFF") %>%
+  hc_add_theme(hc_theme_flat())
+```
+
+## 1. The distribution of word counts by song is more spread out over time
+
+```{r boxplot1, echo = FALSE, warning=FALSE, message=FALSE}
+hcboxplot(x = data.songlength.1$total_count, var = data.songlength.1$year, color = "#815BFF",
+          outliers = FALSE) %>% 
+  hc_title(text = "Distribution of Word Count by Year and Song") %>%
+  hc_chart(type = "column") %>%
+  hc_add_theme(hc_theme_flat()) %>%
+  hc_size(width = "600px", height = "400px") %>%
+  hc_xAxis(title = list(text = "Year"))
+         
+```
+
+## 2. Visualizing song complexity over time
+
+I define "song complexity" as the number of unique non-stopword words per song. I look at song complexity from two different angles: 
+
+1. On average, how many unique words appear per song per album?
+2. On average, how many times is a word repeated per song?
+
+```{r complexity1, echo = FALSE, warning=FALSE, message=FALSE}
+data.songlength.2 <- datV2 %>% 
+                  unnest_tokens(word, text) %>%
+                  anti_join(stop_words) %>% 
+                  group_by(track_title, year) %>%
+                  count(word, sort = TRUE) %>%
+                  summarise(num_distinct = n_distinct(word))
+  # Plotting (1)
+plotting <- data.songlength.2 %>%
+  group_by(year) %>%
+  summarise(average_unq = mean(num_distinct))
+  # Plot results
+# highchart() %>% 
+#   hc_title(text = "Unique Words in Songs by Year") %>%
+#   hc_xAxis(categories = plotting$year) %>%
+#   hc_add_series(name = "Average Number of Unique Words", data = plotting$average_unq, color="#815BFF") %>%
+#   hc_add_theme(hc_theme_flat())
+
+```
+
+
+## 2. The distribution of unique words in songs gets tighter over time
+
+```{r boxplot2, echo = FALSE, warning=FALSE, message=FALSE}
+hcboxplot(x = data.songlength.2$num_distinct, var = data.songlength.2$year, color = "#815BFF",
+          outliers = FALSE) %>% 
+  hc_title(text = "Distribution of Unique Words by Year and Song") %>%
+  hc_chart(type = "column") %>%
+  hc_add_theme(hc_theme_flat()) %>%
+  hc_size(width = "600px", height = "400px") %>%
+  hc_xAxis(title = list(text = "Year"))
+```
+
+## 2. Word repetition was at its highest in 2014
+
+```{r complexity2, echo = FALSE, warning=FALSE, message=FALSE}
+data.songlength.3 <- datV2 %>% 
+                  unnest_tokens(word, text) %>%
+                  anti_join(stop_words) %>% 
+                  group_by(track_title, year) %>%
+                  count(word, sort = TRUE) %>%
+                  summarise(average_rep = mean(n))
+
+  # Plotting (2)
+plotting <- data.songlength.3 %>%
+  group_by(year) %>%
+  summarise(average_rep = mean(average_rep))
+
+hcboxplot(x = data.songlength.3$average_rep, var = data.songlength.3$year, color = "#815BFF", outliers = FALSE) %>% 
+  hc_title(text = "Distribution of Word Repetition by Year and Song") %>%
+  hc_chart(type = "column") %>%
+  hc_add_theme(hc_theme_flat()) %>%
+  hc_size(width = "600px", height = "400px") %>%
+  hc_xAxis(title = list(text = "Year"))
+
+```
+
+## 3. Analyzing song topics over time
+
+* Does Taylor Swift really sing about the same things over and over?
+
+* I use Latent Dirichlet Allocation (LDA) to pull out topics from the text
+
+* LDA is a generative probabilistic model commonly used to model topics in documents
+
+* LDA assigns probabilities to a word falling under a given topic, and to a topic being assigned to a given document
+
+## 3. Each topic refers to a type of song within Taylor's portfolio
+
+``` {r terms, echo = FALSE, warning = FALSE, message = FALSE}
+k <- 5 
+ldaOut.terms <- read.csv(file=paste("LDAGibbs_k=",k,"_TopicsToTerms.csv"))
+
+ldaOut.terms <- ldaOut.terms[,1:length(ldaOut.terms)]
+
+ldaOut.terms
+
+```
+
+## Conclusion
+
+* Looking into the data mostly confirmed my prior beliefs about Taylor's music
+
+* The data does show that Taylor's songs became wordier over time, but seem to suffer from the "song compression" phenomenon
+
+* I hope this analysis inspires you to take a deep dive into the parts of culture you most enjoy
+
+## Sources
+  
+https://medium.com/@lettier/how-does-lda-work-ill-explain-using-emoji-108abf40fa7d
+https://www.wellbeingatschool.org.nz/information-sheet/understanding-and-interpreting-box-plots
+https://www.kaggle.com/PromptCloudHQ/taylor-swift-song-lyrics-from-all-the-albums/kernels
