@@ -4,7 +4,7 @@
 
 # A Topic Modelling Analysis of Taylor Swift Song Lyrics 🎤
 
-![](https://github.com/alliesaizan/teardrops-on-my-df/main/assets/1989_World_Tour.jpg)
+![](assets/1989_World_Tour.jpg)
 
 # Below, you will find an abbreviated version of the blog post I wrote for this project!
 
